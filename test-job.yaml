@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-job
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: curl
+          image: curlimages/curl:8.5.0
+          command:
+            - sh
+            - -c
+            - |
+              curl -X POST http://my-app:8000/write \
+              -H "Content-Type: application/json" \
+              -d '{"message":"hello-from-job"}'
