@@ -11,49 +11,29 @@ on:
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
-    steps:
 
-      # Step 1 — Checkout code
+    steps:
+      # 1️⃣ Checkout repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2 — Install Kind and kubectl
-      - name: Install Kind and kubectl
-        run: |
-          # Install Kind
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.1/kind-linux-amd64
-          chmod +x ./kind
-          sudo mv ./kind /usr/local/bin/kind
-          
-          # Install kubectl
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
-          
-          # Verify installation
-          kind --version
-          kubectl version --client
-
-      # Step 3 — Create ephemeral Kind cluster
+      # 2️⃣ Create kind cluster (installs kind + kubectl automatically)
       - name: Create Kind cluster
-        run: |
-          kind create cluster --name python-dev
-          kubectl wait --for=condition=Ready nodes --all --timeout=60s
-          kubectl get nodes
+        uses: helm/kind-action@v1
 
-      # Step 4 — Build Docker image and load into Kind
+      # 3️⃣ Build Docker image and load into kind
       - name: Build and load Docker image into Kind
         run: |
           docker build -t python-k8s-ephemeral-stack:dev .
-          kind load docker-image python-k8s-ephemeral-stack:dev --name python-dev
+          kind load docker-image python-k8s-ephemeral-stack:dev
 
-      # Step 5 — Install Helm
+      # 4️⃣ Install Helm
       - name: Install Helm
         run: |
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
           helm version
 
-      # Step 6 — Deploy Helm chart
+      # 5️⃣ Deploy Helm chart
       - name: Deploy Helm chart to Kind
         run: |
           helm install my-app ./my-app \
@@ -61,7 +41,7 @@ jobs:
             --set image.tag=dev \
             --wait
 
-      # Step 7 — Run integration test
+      # 6️⃣ Run integration test
       - name: Run integration test
         run: |
           kubectl apply -f test-job.yaml
