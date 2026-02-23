@@ -20,12 +20,14 @@ jobs:
       # 2️⃣ Create kind cluster (installs kind + kubectl automatically)
       - name: Create Kind cluster
         uses: helm/kind-action@v1
+        with:
+          cluster_name: kind
 
       # 3️⃣ Build Docker image and load into kind
       - name: Build and load Docker image into Kind
         run: |
           docker build -t python-k8s-ephemeral-stack:dev .
-          kind load docker-image python-k8s-ephemeral-stack:dev
+          kind load docker-image python-k8s-ephemeral-stack:dev --name kind
 
       # 4️⃣ Install Helm
       - name: Install Helm
