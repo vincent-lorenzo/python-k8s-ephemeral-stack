@@ -1,0 +1,51 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2️⃣ Create kind cluster (installs kind + kubectl automatically)
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: kind
+
+      # 3️⃣ Build Docker image and load into kind
+      - name: Build and load Docker image into Kind
+        run: |
+          docker build -t python-k8s-ephemeral-stack:dev .
+          kind load docker-image python-k8s-ephemeral-stack:dev --name kind
+
+      # 4️⃣ Install Helm
+      - name: Install Helm
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
+      # 5️⃣ Deploy Helm chart
+      - name: Deploy Helm chart to Kind
+        run: |
+          helm install my-app ./my-app \
+            --set image.repository=python-k8s-ephemeral-stack \
+            --set image.tag=dev \
+            --wait
+
+      # 6️⃣ Run integration test
+      - name: Run integration test
+        run: |
+          kubectl apply -f test-job.yaml
+          kubectl wait --for=condition=complete job/test-job --timeout=120s
+          kubectl logs job/test-job
